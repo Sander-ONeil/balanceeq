@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    </style>
+    <title>String Splitter</title>
+    
+    <style>
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .input-box {
+            font-size: 20px;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .error_box {
+            color: darkred;
+            margin-top: 40px;
+            font-size: 30px;
+        }
+
+        .answer {
+            color: black;
+            margin-top: 40px;
+            font-size: 40px;
+        }
+        .addi {
+            color: black;
+            margin-top: 40px;
+            font-size: 40px;
+        }
+        .solvedfor {
+            color: black;
+            margin-top: 40px;
+            font-size: 40px;
+        }
+        .padding {
+            color: transparent;
+            margin-top: 40px;
+            margin-bottom: 40px;
+            font-size: 40px;
+        }
+        canvas {
+            border: 1px solid black;
+            margin-right: 20px;
+        }
+        #scaleSlider {
+            writing-mode: bt-lr; /* IE */
+            -webkit-appearance: slider-vertical; /* WebKit */
+            width: 20px;
+            height: 400px;
+            padding: 0 5px;
+        }
+        #scaleSlider2 {
+            writing-mode: bt-lr; /* IE */
+            -webkit-appearance: slider-horizontal; /* WebKit */
+            width: 600px;
+            height: 20px;
+            padding: 0 5px;
+        }
+        
+    </style>
+</head>
+<body>
+
+
+<!-- Special Buttons -->
+<div id="buttons-container"></div>
+
+
+<!-- Entry Box -->
+<input type="text" class="input-box" id ="input-box"  placeholder="Enter your text here..." onkeyup="MAIN()",spellcheck="false">
+
+
+<div class="error_box"></div>
+<!-- Result Display -->
+<div class="answer" id="answer">Answer</div>
+<div class="addi" id="addi">addi</div>
+<div class="solvedfor" id="solvedfor">solved </div>
+
+
+
+<div class="padding">1 </div>
+<div class="graph-container">
+    <canvas id="graphCanvas" width="600" height="400"></canvas>
+    <input type="range" id="scaleSlider" min="1" max="100" value="40" orient="vertical">
+</div>
+<input type="range" id="scaleSlider2" min="1" max="100" value="20" orient="horizontal">
+<script>
+const inputElem = document.getElementById("input-box");
+//inputElem.focus();
+
+const button_text = ['^','*','/','+','-','√','²√','cos','sin','tan','logₑ'];
+
+const buttonsContainer = document.getElementById("buttons-container");
+
+button_text.forEach(t => {
+    const btn = document.createElement('button');
+    btn.textContent = t;
+    btn.classList.add('special-btn');
+    btn.onclick = () => insertCharacter(t);
+    buttonsContainer.appendChild(btn);
+});
+
+function insertCharacter(char) {
+    const inputElem = document.getElementById("input-box");
+    
+    const cursorPosition = inputElem.selectionStart;
+
+    const inputValue = inputElem.value;
+    const beforeCursor = inputValue.substring(0, cursorPosition);
+    const afterCursor = inputValue.substring(cursorPosition, inputValue.length);
+
+
+    inputElem.value = beforeCursor + char + afterCursor;
+    
+    // Move the cursor right after the inserted character
+    inputElem.selectionStart = cursorPosition + char.length;
+    inputElem.selectionEnd = cursorPosition + char.length;
+
+    MAIN();  // If you still want to update the divs immediately after insertion
+    inputElem.focus();
+}
+
+function no(n){
+    return n;
+}
+function add(x,y){
+return x + y;
+}
+function mult(x,y){return x*y;}
+function div(x,y){ return x/y;}
+function exp(x,y){ return Math.pow(x,y);}
+function sub(x,y){ return x-y;}
+function root(x,y){ return Math.pow(y, 1/x)} // x√(y)
+function logroot1(x,y){ return 1/(Math.log(x)/Math.log(y))}
+function logroot2(x,y){ return exp(x,y)}
+
+function log2(x,y){ return Math.log(x)/Math.log(y)}
+function expinv(x,y) {return root(y,x)}
+function subinv(x,y) {return sub(y,x)}
+var cos = Math.cos;
+var sin = Math.sin;
+var tan = Math.tan;
+var acos = Math.acos;
+var asin = Math.asin;
+var atan = Math.atan;
+function loge(x){ return Math.log(x);}
+function expe(x){return Math.pow(Math.E,x);}
+var sqrt = Math.sqrt;
+function sqr(x){return Math.pow(x,2);}
+inverts = {
+    no:no,
+    sub:[add,subinv],
+    add:sub,
+    div:[mult,div],
+    mult:div,
+    exp:[expinv,log2],
+    root:[logroot1,logroot2],
+    acos:cos,
+    asin:sin,
+    atan:tan,
+    cos:acos,
+    sin:asin,
+    tan:atan,
+    loge:expe,
+    expe:loge,
+    sqrt:sqr,
+    sqr:sqrt,
+};
+
+functions = {
+    'no':no,
+    '':no,
+    '+':add,
+    '*':mult,
+    '/':div,
+    '^':exp,
+    '-':sub,
+    '√':root,
+    'log':log2,
+    '*(-1)+':subinv,
+    
+};
+
+single_func = {
+    'cos':cos,
+    'sin':sin,
+    'tan':tan,
+    'acos':acos,
+    'asin':asin,
+    'atan':atan,
+    'ln':loge,
+    'e^':expe,
+    '²√':sqrt,
+    'sqr':sqr,
+}
+const flip_dict = obj => Object.fromEntries(Object.entries(obj).map(a => a.reverse()))
+flipped_functions = flip_dict(functions);
+flipped_single_func = flip_dict(single_func);
+class X{
+    solve(){
+        return this;
+    }
+    f(x){
+        return x;
+    }
+    isx(){
+        return true;
+    }
+    isactuallyX(){
+        return true;
+    }
+    toString(){
+        return'x';
+    }
+}
+class operation{
+    constructor() 
+    {
+        //this.op = NaN;
+        this.t1 = NaN;
+        this.t2 = NaN;
+        this.op = no;
+        this.single = false;
+    }
+    isactuallyX(){
+        return false;
+    }
+    set_operation(str)
+    {
+        this.op = functions[str];
+    }
+
+    set_terms(n)
+    {
+        this.terms = n;
+    }
+    isx()
+    {
+        if (typeof this.t1 != 'number')
+        {
+            if (this.t1.isx()){
+                return true;
+            }
+        }
+        if (typeof this.t2 != 'number')
+        {
+            if (this.t2.isx()){
+                return true;
+            }
+        }
+        return false;
+    }
+    solve()
+    {
+        if (typeof this.t1 != 'number')
+        {
+            this.t1 = this.t1.solve();
+        }
+        if (typeof this.t2 != 'number')
+        {
+            this.t2 = this.t2.solve();
+        }
+        if (this.isx()){
+            return this;
+        }
+        //////////console.log(this.op(this.t1,this.t2));
+        if (this.single){
+            return this.op(this.t1);
+        }
+        return this.op(this.t1,this.t2);
+    }
+    f(x){
+        let a;
+        let b;
+        if (typeof this.t1 != 'number')
+        {
+            a = this.t1.f(x);
+        }
+        else{
+            a = this.t1;
+        }
+        if (typeof this.t2 != 'number')
+        {
+            b = this.t2.f(x);
+        }
+        else{
+            b = this.t2;
+        }
+        //////////console.log(this.op(this.t1,this.t2));
+        if (this.single){
+            //console.log('f(x)',this.op,'(',a,') =',this.op(a))
+            return this.op(a);
+        }
+        return this.op(a,b);
+    }
+    toString(){
+        if( this.single){
+            if (this.op == no){
+                return this.t1.toString();
+            }
+            if (this.op == sqr){
+                return this.t1.toString() + '²';
+            }
+            return flipped_single_func[this.op] + '(' + this.t1.toString() + ')';
+        }
+        return '(' + this.t1.toString() + flipped_functions[ this.op] + this.t2.toString() + ')';
+    }
+}
+
+function find_next_pemdAS(str,num)
+{
+    let pemdas_order = {'^':0,'√':0,'*':1,'/':2,'+':3,'-':4};
+    let pemdas = ['^','*','/','+','-','√'];
+    
+    let lowest_order = -10000;
+    let lowest_index = str.length;
+    let p_depth = 0;
+    let p_open = ['[','{','('];
+    let p_close = [']','}',')'];
+    for (let i =  str.length; i> num; i--)
+    {
+        let c = str[i];
+        ////////////console.log(c);
+        p_depth += p_open.includes(c);
+        p_depth -= p_close.includes(c);
+
+        if (pemdas.includes(c))
+        {
+            let current_order = pemdas_order[c]- p_depth*10;
+            //////////console.log('currentoreder',current_order,p_depth)
+            if (current_order>lowest_order)
+            {
+                ////////////console.log('lowest:',lowest_index)
+                lowest_order = current_order;
+                lowest_index = i+0;
+            }
+        }
+    }
+    return lowest_index;
+}
+function find_first_pemdAS(str,num)
+{
+    let pemdas_order = {'^':0,'√':0,'*':1,'/':2,'+':3,'-':4};
+    let pemdas = ['^','*','/','+','-','√'];
+    
+    let lowest_order = -10000;
+    let lowest_index = str.length;
+    let p_depth = 0;
+    let p_open = ['[','{','('];
+    let p_close = [']','}',')'];
+    for (let i =  num; i < str.length; i++)
+    {
+        let c = str[i];
+        ////////////console.log(c);
+        p_depth += p_open.includes(c);
+        p_depth -= p_close.includes(c);
+
+        if (pemdas.includes(c))
+        {
+            let current_order = pemdas_order[c]- p_depth*10;
+            //////////console.log('currentoreder',current_order,p_depth)
+            if (current_order>lowest_order)
+            {
+                ////////////console.log('lowest:',lowest_index)
+                lowest_order = current_order;
+                lowest_index = i+0;
+            }
+        }
+    }
+    return lowest_index;
+}
+
+function find_matched_bracket(str,i)
+{
+    let depth = 0;
+    for (let c = i+1; c< str.length; c++)
+    {
+        let C = str[c];
+        if (depth == 0 && '})]'.includes(C))
+        {
+        return c;
+        }
+        if ('({['.includes(C)){
+        depth+=1;
+        }
+        if ('})]'.includes(C)){
+        depth-=1;
+        }
+    }
+    return str.length;
+}
+
+function convert(str,depth = 0)
+{
+    console.log(str,depth)
+    if (str[0] == '-'){
+        str = 0+str;
+    }
+    if ( '{[('.includes(str[0]) &&  '}])'.includes(str[str.length-1])  ){
+        str = str.substring(1,str.length-1);
+
+    }
+    for (let x = 1; x< str.length;x++){
+    if (str[x] == 'x' && '0987654321'.includes(str[x-1]) ){
+
+    str = str.substring(0,x)+'*'+str.substring(x,str.length);
+}
+    }
+
+    let OP = new operation();
+    OP.depth = depth;
+    for (let f in single_func){
+    if (str.substring(0,f.length).includes(f)){
+        //console.log('single func',f);
+        OP.op = single_func[f];
+        
+        //console.log('single func operation',OP.op);
+
+        let end = find_matched_bracket(str,f.length);
+        OP.t1 = convert( str.substring(f.length,end+1),depth+1);
+        ////console.log('INSIDE BRACKETS',str.substring(f.length+1,end))
+        OP.single = true;
+        ////console.log(OP,'depth:',depth);
+
+        ////console.log(str, end, str.length)
+        if (end +1== str.length || end == str.length){
+            ////console.log('TRUE')
+        return OP;}
+
+        let OP2 = new operation();
+        OP2.depth = depth;
+        OP2.t1 = OP;
+        OP2.set_operation(str[end+1]);
+        ////console.log('after single operation',str[end+1])
+        ////console.log(str.substring(end+2, str.end).trim())
+        let second_term = convert(str.substring(end+2, str.end).trim(),depth+1);
+        OP2.t2 = second_term;
+        return OP2;
+    }}
+
+    
+
+    let start = find_next_pemdAS(str,0);
+    //////////console.log('next pemdas',start,'srlength',str.length,'depth',depth)
+    let first_term = str.substring(0, start).trim();
+
+    if (start != str.length)
+    {
+        OP.t1 = convert(first_term,depth+1);
+        OP.set_operation(str[start]);
+
+        let end =  find_next_pemdAS(str,start+1);
+        let second_term = convert(str.substring(start+1, str.end).trim(),depth+1);
+        OP.t2 = second_term;
+    }
+    else
+    {
+        if (first_term == 'x'){
+            return new X();
+        }
+
+        // if (first_term[first_term.length-1] == 'x' && '0987654321'.includes(first_term[first_term.length-2]) ){
+
+        //     return(convert(first_term.replaceAll('x','*x')));
+        // }
+        OP.t1 = term_to_value(first_term);
+        OP.single = true;
+        first_term = first_term.replaceAll('[','')
+        first_term = first_term.replaceAll(']','')
+        first_term = first_term.replaceAll('(','')
+        first_term = first_term.replaceAll(')','')
+        first_term = first_term.replaceAll('{','')
+        first_term = first_term.replaceAll('}','')
+        if (depth != 0){
+        return  term_to_value(first_term);}
+        else { return OP}
+    }
+    //////console.log(OP,'depth:',depth);
+
+    return OP;
+}
+function term_to_value(str){
+    return parseFloat(str)
+}
+function solveforx(s1, s2)
+{
+    let sx = s1;
+    let sy = s2;
+
+    if(s1.isx()){ sx = s1;
+    sy = s2;}
+    if(s2.isx()){ sx = s2;
+    sy = s1;}
+
+    while(!sx.isactuallyX()){
+        let newsy = new operation();
+
+        let tx;
+        let ta;
+        let order = false;
+        if(isx(sx.t1)){ tx = sx.t1;
+        ta = sx.t2;}
+        if(isx(sx.t2)){ tx = sx.t2;
+        ta = sx.t1;
+        order = true;}
+        
+
+        let inv =  inverts[sx.op.name];
+        if (typeof inv == 'object'){
+            inv = inv[order + 0];
+        }
+        newsy.op = inv;
+        newsy.single = sx.single;
+        
+        newsy.t1 = sy;
+        newsy.t2 = ta;
+        
+        sy = newsy;
+        sx = tx;
+        
+    }
+
+    return(sy)
+}
+
+function isx(a){
+    if (typeof a == 'number'){
+        return false
+    }
+    else{ return a.isx()}
+}
+
+function MAIN()
+{
+    let inputValue = document.querySelector('.input-box').value;
+    if (inputValue.includes('='))
+    {
+        let eq = inputValue.split('=');
+        let side1 = convert(eq[0]);
+        let side2 = convert(eq[1]);
+        let solved;
+        if (side1.isx() || side2.isx()){
+            solved = solveforx(side1,side2);
+        }
+        
+        let resultstring = side1.solve() + '=' + side2.solve();
+        document.querySelector('.answer').innerHTML = resultstring;
+
+
+        document.querySelector('.addi').innerHTML = solved.toString();
+        console.log(solved);
+        document.querySelector('.solvedfor').innerHTML = solved.solve();
+    }
+    else{
+    let Result = convert(inputValue);
+
+    resultstring = ( Result.solve());
+
+    document.querySelector('.answer').innerHTML = resultstring;
+    document.querySelector('.addi').innerHTML = Result.toString();
+    //return inputValue;
+    }
+
+    if (inputValue.includes('='))
+    {
+        let eq = inputValue.split('=');
+        let fun = convert(eq[0]);
+        let fun2 = convert(eq[1]);
+        drawGraph(fun,fun2);
+    }
+    else{
+    let fun = convert(inputValue);
+    //console.log(fun)
+
+    //document.querySelector('.error_box').innerHTML = fun.f(1);
+    //console.log(fun.f(1));
+    drawGraph(fun);
+    }
+
+}
+
+function handleDropdownChange(event) {
+  let char = event.target.value;
+
+  MAIN();  // If you still want to update the divs immediately after insertion
+  
+  inputElem.focus();
+}
+var currentScalex = 100;
+var currentScaley = 100; // Default scale value
+
+function updateScale() {
+    currentScaley = parseInt(document.getElementById('scaleSlider').value, 10);
+    currentScalex = parseInt(document.getElementById('scaleSlider2').value, 10);
+    MAIN(); // Redraw the graph with the new scale
+}
+
+document.getElementById('scaleSlider').addEventListener('input', updateScale);
+document.getElementById('scaleSlider2').addEventListener('input', updateScale);
+
+function drawGraph(fun,fun2 = 0) {
+
+            var canvas = document.getElementById('graphCanvas');
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Adjust the maxY based on the slider's value
+            var maxY = 10**(currentScaley/25); // This line replaces the fixed assignment
+
+            // Define the range and scale.
+            var maxX = 10**(currentScalex/25);
+            var minX = -maxX;
+            var minY = -maxY;
+            
+            var scaleX = canvas.width / (maxX - minX);
+            var scaleY = canvas.height / (maxY - minY);
+
+            // Function to transform canvas coordinates
+            function transformX(x) {
+                return (x - minX) * scaleX;
+            }
+
+            function transformY(y) {
+                return canvas.height - (y - minY) * scaleY;
+            }
+
+            // Function to draw the axis
+            function drawAxisAndMarkers() {
+                // Axis
+                ctx.beginPath();
+                ctx.moveTo(transformX(minX), transformY(0));
+                ctx.lineTo(transformX(maxX), transformY(0));
+                ctx.moveTo(transformX(0), transformY(minY));
+                ctx.lineTo(transformX(0), transformY(maxY));
+                ctx.strokeStyle = 'black';
+                ctx.stroke();
+
+                // Markers
+                ctx.fillStyle = 'black';
+                for (let x = minX; x <= maxX; x += (maxX - minX) / 10) {
+                    ctx.fillText(x.toFixed(2), transformX(x), transformY(0) + 15);
+                    ctx.beginPath();
+                    ctx.moveTo(transformX(x), transformY(0) - 5);
+                    ctx.lineTo(transformX(x), transformY(0) + 5);
+                    ctx.stroke();
+                }
+                for (let y = minY; y <= maxY; y += (maxY - minY) / 10) {
+                    if (y !== 0) { // Avoid overlapping with x-axis label
+                        ctx.fillText(y.toFixed(2), transformX(0) - 30, transformY(y) + 3);
+                        ctx.beginPath();
+                        ctx.moveTo(transformX(0) - 5, transformY(y));
+                        ctx.lineTo(transformX(0) + 5, transformY(y));
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // The function to graph
+            drawAxisAndMarkers();
+
+            // Plotting the function
+            ctx.beginPath();
+            for (let x = minX; x <= maxX; x +=(maxX - minX) / 1000) { // Increase for more resolution
+                let y = fun.f(x);
+                if (x === minX) {
+                    ctx.moveTo(transformX(x), transformY(y));
+                } else {
+                    ctx.lineTo(transformX(x), transformY(y));
+                }
+            }
+            ctx.strokeStyle = 'red';
+            ctx.stroke();
+
+            if (fun2 != 0){
+            ctx.beginPath();
+            for (let x = minX; x <= maxX; x += (maxX - minX) / 1000) { // Increase for more resolution
+                let y = fun2.f(x);
+                if (x === minX) {
+                    ctx.moveTo(transformX(x), transformY(y));
+                } else {
+                    ctx.lineTo(transformX(x), transformY(y));
+                }
+            }
+            ctx.strokeStyle = 'green';
+            ctx.stroke();
+
+            }
+
+            // Drawing the axis at the end so it's on top
+            
+        }
+
+        updateScale()
+    
+</script>
+
+</body>
+</html>
